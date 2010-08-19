@@ -1,0 +1,88 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Self Loading Divs</title>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
+<script type="text/javascript" src="../src/ook.js"></script>
+
+<script type="text/javascript">
+
+myClass = ook.class();
+myClass.prototype._construct = function()
+{
+	var privateMethod = function()
+	{
+		console.info('myClass : privateMethod');
+	};
+	
+	this.protectedMethod = function()
+	{
+		privateMethod();
+		console.info('myClass : protectedMethod');
+	};
+};
+
+myClass.prototype.publicMethod = function()
+{
+	console.info('myClass : publicMethod');
+};
+
+myObservableClass = ook.class().extend(document.createElement('div')).mixin(ook.observable);
+myObservableClass.prototype._construct = function()
+{
+	this.submit = function(){
+		this.dispatch({type:'onsubmit',payload:{}});
+	};
+};
+
+var xtc = new myClass();
+xtc.publicMethod();
+xtc.protectedMethod();
+
+var obs = new myObservableClass();
+var listener = {
+	onsubmit: function(e)
+	{ 
+		obs.removeListener(e.type, listener.onsubmit);
+		console.info(e);
+	}
+}
+
+obs.addListener('onsubmit',listener.onsubmit);
+obs.submit();
+obs.submit();
+
+myDiv = ook.class().extend('myObservableClass');
+
+var myDivTest = new myDiv();
+myDivTest.addListener('onsubmit',listener.onsubmit);
+myDivTest.submit();
+myDivTest.submit();
+myDivTest.innerHTML = 'Test this bitch';
+
+$(document).ready(function()
+{
+	$("#domtest").add(myDivTest);
+	document.getElementById('domtest').appendChild(myDivTest);
+});
+
+
+</script>
+
+</head>
+
+<body>
+
+<div id="domtest">Old Stuff</div>
+
+This is an example of some self loading DIV's
+
+<div parseas="com.sjl.test.contentBox1"></div>
+<div parseas="com.sjl.test.contentBox2"></div>
+<div parseas="com.sjl.test.contentBox3"></div>
+<div parseas="com.sjl.test.contentBox4"></div>
+
+</body>
+
+</html>
