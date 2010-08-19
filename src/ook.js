@@ -1,5 +1,17 @@
-var ook = new function (){
-	this.class = function()
+/**
+ * Object Orientation Kit
+ *
+ * LICENSE
+ *
+ * @license http://www.opensource.org/licenses/bsd-license.php New BSD License
+ * @copyright Copyright (c) 2010, Danny Graham, Scott Thundercloud
+ */
+
+/**
+ * @constructor
+ */
+ook = new(function (){
+	this.Class = function()
 	{
 		var newClass = function()
 		{
@@ -85,7 +97,12 @@ var ook = new function (){
 			// Perform Mixin
 			for(var i=0; i<newClass.__mixins.length; i++)
 			{
-				var mObj = (typeof newClass.__mixins[i] == 'function') ? eval('new '+newClass.__mixins[i]+'();') : newClass.__mixins[i];
+				if (typeof newClass.__mixins[i] == 'function') var mObj = eval('new '+newClass.__mixins[i]+'();');
+				else if (typeof newClass.__mixins[i] == 'object') var mObj = newClass.__mixins[i];
+				else if (typeof newClass.__mixins[i] == 'string') var mObj = eval(newClass.__mixins[i]); // This is EVIIIIL
+				
+				if (!mObj) return;
+				
 				for (var property in mObj) {
 					this[property] = mObj[property];
 				}
@@ -123,7 +140,7 @@ var ook = new function (){
 		return newClass;
 	};
 	
-	this.event = this.class();
+	this.event = this.Class();
 	this.event.prototype._construct = function(){
 		
 		var __events = {};
@@ -216,4 +233,4 @@ var ook = new function (){
 			ook.event.removeListener(this,event,listener);
 		}
 	};
-};
+})();

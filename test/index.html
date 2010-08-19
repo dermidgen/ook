@@ -4,12 +4,13 @@
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <title>Self Loading Divs</title>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
-<script type="text/javascript" src="../src/ook.js"></script>
+<!--<script type="text/javascript" src="../src/ook.js"></script>-->
+<script type="text/javascript" src="../ook/ook-min.js"></script>
 
 <script type="text/javascript">
 
-myClass = ook.class();
-myClass.prototype._construct = function()
+basicClass = ook.Class();
+basicClass.prototype._construct = function()
 {
 	var privateMethod = function()
 	{
@@ -23,48 +24,90 @@ myClass.prototype._construct = function()
 	};
 };
 
-myClass.prototype.publicMethod = function()
+basicClass.prototype.publicMethod = function()
 {
 	console.info('myClass : publicMethod');
 };
 
-myObservableClass = ook.class().extend(document.createElement('div')).mixin(ook.observable);
-myObservableClass.prototype._construct = function()
+basicObservable = ook.Class().mixin(ook.observable);
+basicObservable.prototype._construct = function()
 {
-	this.submit = function(){
-		this.dispatch({type:'onsubmit',payload:{}});
+	this.submit = function(data){
+		this.dispatch({type:'onsubmit',payload:data});
 	};
 };
 
-var xtc = new myClass();
-xtc.publicMethod();
-xtc.protectedMethod();
+basicExtends = ook.Class().extend(new basicClass);
+basicExtends1 = ook.Class().extend('basicClass');
 
-var obs = new myObservableClass();
+domExtends = ook.Class().extend('_DOM_div');
+domExtends.prototype._construct = function()
+{
+	this.innerHTML = 'domExtends';
+};
+
+domExtends1 = ook.Class().extend(document.createElement('div'));
+domExtends1.prototype._construct = function()
+{
+	this.innerHTML = 'domExtends 1';
+};
+
+domObservable = ook.Class().extend(document.createElement('div')).mixin(ook.observable);
+domObservable.prototype._construct = function()
+{
+	this.innerHTML = 'domObservable';
+};
+
+domObservable.prototype.onclick = function()
+{
+	this.dispatch({type:'onclick'});
+};
+
+
+
+var basicClassTest = new basicClass();
+basicClassTest.publicMethod();
+basicClassTest.protectedMethod();
+
+var basicObservableTest = new basicObservable();
 var listener = {
 	onsubmit: function(e)
 	{ 
-		obs.removeListener(e.type, listener.onsubmit);
+		basicObservableTest.removeListener(e.type, listener.onsubmit);
+		console.info(e.payload);
+	}
+}
+
+basicObservableTest.addListener('onsubmit',listener.onsubmit);
+basicObservableTest.submit('basicObservable: Test One');
+basicObservableTest.submit('basicObservable: Test Two - FAIL');
+
+var basicExtendsTest = new basicExtends();
+basicExtendsTest.publicMethod();
+basicExtendsTest.protectedMethod();
+
+var basicExtendsTest1 = new basicExtends1();
+basicExtendsTest1.publicMethod();
+basicExtendsTest1.protectedMethod();
+
+var domExtendsTest = new domExtends();
+var domExtendsTest1 = new domExtends1();
+
+var domObservableTest = new domObservable();
+var listener1 = {
+	onclick: function(e)
+	{ 
 		console.info(e);
 	}
 }
 
-obs.addListener('onsubmit',listener.onsubmit);
-obs.submit();
-obs.submit();
-
-myDiv = ook.class().extend('myObservableClass');
-
-var myDivTest = new myDiv();
-myDivTest.addListener('onsubmit',listener.onsubmit);
-myDivTest.submit();
-myDivTest.submit();
-myDivTest.innerHTML = 'Test this bitch';
+domObservableTest.addListener('onclick',listener1.onclick);
 
 $(document).ready(function()
 {
-	$("#domtest").add(myDivTest);
-	document.getElementById('domtest').appendChild(myDivTest);
+	document.getElementById('domtest').appendChild(domExtendsTest);
+	document.getElementById('domtest').appendChild(domExtendsTest1);
+	document.getElementById('domtest').appendChild(domObservableTest);
 });
 
 
@@ -74,7 +117,7 @@ $(document).ready(function()
 
 <body>
 
-<div id="domtest">Old Stuff</div>
+<div id="domtest"></div>
 
 This is an example of some self loading DIV's
 
