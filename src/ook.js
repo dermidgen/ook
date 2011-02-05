@@ -60,7 +60,7 @@ ook.Class = function()
 
 	/**
 	* Adds an item to the list of mixins
-	* @param {*} Object to be mixed in
+	* @param {*} strObj to be mixed in
 	* @this {Object}
 	* @return {!Object}
 	*/
@@ -72,7 +72,7 @@ ook.Class = function()
 
 	/**
 	* Adds an item to the list of mixins
-	* @param {*} Object to be mixed in
+	* @param {*} strObj to be mixed in
 	* @this {Object}
 	* @return {!Object}
 	*/
@@ -84,7 +84,7 @@ ook.Class = function()
 
 	/**
 	* Sets an object to be extended
-	* @param {*} Object to be mixed in
+	* @param {*} strObj to be mixed in
 	* @this {Object}
 	* @return {!Object}
 	*/
@@ -96,7 +96,7 @@ ook.Class = function()
 
 	/**
 	* Our new class's constructor that will be called
-	* @return {!Object} The final class to be instantiated
+	* @return {!Object||null} The final class to be instantiated
 	*/
 	newClass.prototype.__construct = function()
 	{
@@ -148,7 +148,7 @@ ook.Class = function()
 			if (typeof newClass.__mixins[i] == 'function') var mObj = eval('new '+newClass.__mixins[i]+'();');
 			else if (typeof newClass.__mixins[i] == 'object') var mObj = newClass.__mixins[i];
 			
-			if (!mObj) return;
+			if (!mObj) return null;
 			
 			for (var property in mObj) {
 				this[property] = mObj[property];
@@ -213,28 +213,49 @@ ook.events = ook.Class();
 ook.events.prototype._construct = function()
 {
 	/** @private */
-	var __events = {};
+	var __events = [];
 
 	/** @private */
-	var __event = function(event)
+	var __event = function(event, origin)
 	{
 		return {
 			name: event,
+			origin: origin,
 			listeners: []
 		};
 	};
 
 	/** @private */
+	var __findEvent = function(event, origin)
+	{
+		var index = __findEventIndex(event, origin);
+		if (index !== false) return __events[index];
+		else return null;
+	};
+	
+	/** @private */
+	var __findEventIndex = function(event, origin)
+	{
+		for(var i=0; i<__events.length; i++) {
+			if (typeof __events[i].name != 'undefined' && typeof __events[i].origin != 'undefined') {
+				if (__events[i].name === event && __events[i].origin === origin) return i;
+			}
+		}
+		return false;
+	};
+
+
+	/** @private */
 	var __dispatchQueue = function(origin, data)
 	{
-		if (!__events[origin]) return false;
-		 
 		var event = data.type;
-		if (!__events[origin][event]) return false;
-					 
-		for(var i=0; i < __events[origin][event].listeners.length; i++)
+
+		if (!__findEvent(event, origin)) return false;
+		
+		var index = __findEventIndex(event,origin);
+		for(var i=0; i < __events[index].listeners.length; i++)
 		{
-			var proc = (__events[origin][event].listeners[i][event]) ? (__events[origin][event].listeners[i][event]) : __events[origin][event].listeners[i];
+			var proc = (__events[index].listeners[i][event]) ? (__events[index].listeners[i][event]) : __events[index].listeners[i];
 			proc(data);
 		}
 	};
@@ -242,13 +263,13 @@ ook.events.prototype._construct = function()
 	/** @private */
 	var __removeListener = function(origin, event, listener)
 	{
-		if (!__events[origin]) return false;
-		if (!__events[origin][event]) return false;
+		if (!__findEvent(event, origin)) return false;
 		
-		for (var i in __events[origin][event].listeners)
+		var index = __findEventIndex(event, origin);
+		for (var i=0; i<__events[index].listeners.length; i++)
 		{
-			if(__events[origin][event].listeners[i] == listener) {
-				__events[origin][event].listeners.splice(i, 1);
+			if(__events[index].listeners[i] === listener) {
+				__events[index].listeners.splice(i, 1);
 			}
 		}
 	};
@@ -256,20 +277,18 @@ ook.events.prototype._construct = function()
 	/** @private */
 	var __addEvent = function(origin,event)
 	{
-		if (!__events[origin]) __events[origin] = {};
-		if (!__events[origin][event]) __events[origin][event] = __event(event);
+		if (!__findEvent(event, origin)) __events.push(__event(event, origin));
 	};
 
 	/** @private */
 	var __checkListener = function(origin, event, obj)
 	{
-		if (!__events[origin]) return false;
-		if (!__events[origin][event]) return false;
+		if (!__findEvent(event, origin)) return false;
 		
-		var listeners = __events[origin][event].listeners;
+		var listeners = __findEvent(event,origin).listeners;
 		for(var i=0; i < listeners.length; i++)
 		{
-			if(listeners[i] == obj) return true;
+			if(listeners[i] === obj) return true;
 		}
 		return false;
 	};
@@ -284,7 +303,10 @@ ook.events.prototype._construct = function()
 	this.addListener = function(origin,event,obj)
 	{
 		__addEvent(origin,event);
-		if(!__checkListener(origin,event,obj)) __events[origin][event].listeners.push(obj);
+		if(!__checkListener(origin,event,obj)) {
+			var index = __findEventIndex(event,origin);
+			__events[index].listeners.push(obj);
+		}
 	};
 	
 	/** @protected */
